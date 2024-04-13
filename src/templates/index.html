@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.js"></script>
+</head>
+
+<body style="background: #afeebf; font-family:'Times New Roman', Times, serif; color: #131c53;">
+  <div style="text-align: center; align-items: center;">
+    <h1 style="font-size: xx-large; height: 40px;">Current McComas Hall Occupancy</h1>
+
+    <p style="font-size: large; height: 16px;" id="welcome_text">Hello Visiter<br>The time is {{time}} and the current
+      occupancy is
+      {{current_occupancy}}</p>
+    <!-- takes the name variable from views.py...we can maybe replace this variable with what the occupancy is later to display-->
+
+    <h2 style="font-size: xx-large; height: 40px;">Beautiful McComas</h2>
+    <img style="justify-self: center; border-radius: 50px;" src="{{url_for('static', filename='McComas.jpg')}}"
+      alt="McComas" width="500" height="333">
+
+
+  </div>
+
+  <script>
+    if ("{{current_occupancy}}" != "1") {
+      document.getElementById("welcome_text").innerHTML += " people.";
+    }
+    else {
+      document.getElementById("welcome_text").innerHTML += " person.";
+    }
+    var socket = io.connect();
+    window.onbeforeunload = function () {
+      socket.disconnect(true);
+    }
+    socket.on('send_info', function (data) {
+      var time = data['time'];
+      var occupancy = data['occupancy'];
+      document.getElementById('welcome_text').innerHTML = "Hello Visiter<br>The time is " + time + " and the current occupancy is " + occupancy;
+      if (occupancy != 1) {
+        document.getElementById("welcome_text").innerHTML += " people.";
+      }
+      else {
+        document.getElementById("welcome_text").innerHTML += " person.";
+      }
+    });
+    setInterval(function () {
+      socket.emit('get_info');
+    }, 1000);
+  </script>
+</body>
+
+</html>
