@@ -76,7 +76,6 @@ class AI():
         while (True):
             try:
                 ret, frame = vid.read()
-                cv2.imshow('frame', frame)
                 current = currentVal(frame)
                 if current != prev:
                     real = check_frames(current, vid)
