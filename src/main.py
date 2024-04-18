@@ -10,7 +10,8 @@ app.register_blueprint(views.views, url_prefix="/views")
 
 @socketio.on('get_info')
 def update_info():
-    socketio.emit('send_info', {'time': views.get_time(), 'occupancy': views.get_occupancy()})
+    socketio.emit(
+        'send_info', {'time': views.get_time(), 'occupancy': views.get_occupancy()})
 
 
 if __name__ == '__main__':

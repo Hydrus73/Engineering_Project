@@ -6,8 +6,11 @@ import streamlink
 occupancy = 0
 run = False
 LIVESTREAM_URL = "[LIVESTREAM_URL]"
-VIDEO_FILE_PATH = '[VIDEO_FILE_PATH]'
-USE_LIVESTREAM = True
+VIDEO_FILE_PATH = '../Engineering_Project/src/test_video.mov'
+USE_LIVESTREAM = False
+SHOW_VIDEO = True
+FLIP_VIDEO = True
+
 
 class AI():
     @staticmethod
@@ -20,25 +23,17 @@ class AI():
 
         run = True
 
-        image_size = 100
-
+        IMAGE_SIZE = 100
         resize = tf.keras.Sequential(
-            [tf.keras.layers.Resizing(image_size, image_size)])
-        base_model = tf.keras.applications.ResNet50(input_shape=(image_size,
-                                                                 image_size, 3),
-                                                    include_top=False)
-        input_layer = tf.keras.layers.Input((image_size, image_size, 3))
-        scaling_layer = tf.keras.layers.Rescaling(scale=1.0 / 127.5, offset=-1)
-        x = scaling_layer(input_layer)
-        x = base_model(x, training=False)
-        x = tf.keras.layers.GlobalAveragePooling2D()(x)
-        output_layer = tf.keras.layers.Dense(1, activation="tanh")(x)
-        model = tf.keras.Model(input_layer, output_layer)
-        model = tf.keras.models.load_model('ai/model.h5')
+            [tf.keras.layers.Resizing(IMAGE_SIZE, IMAGE_SIZE)])
+        model = tf.keras.models.load_model('model.h5')
 
         def currentVal(frame):
             frame = resize(frame)
+            if FLIP_VIDEO:
+                frame = tf.image.flip_left_right(frame)
             output = model(np.array([frame])).numpy()[0][0]
+            print(output)
             if output < -0.5:
                 return -1
             if output > 0.5:
@@ -46,25 +41,21 @@ class AI():
             return 0
 
         def check_frames(newVal, vid):
-            if prev != 0:
-                for i in range(DELAY_FRAMES):
-                    ret, frame = vid.read()
-                    output = currentVal(frame)
-                    if output != newVal:
-                        return False
-                return True
-            else:
-                for i in range(int(DELAY_FRAMES / 2)):
-                    ret, frame = vid.read()
-                    output = currentVal(frame)
-                    if output != newVal:
-                        return False
-                return True
+            for i in range(DELAY_FRAMES):
+                ret, frame = vid.read()
+                if SHOW_VIDEO:
+                    cv2.imshow('frame', cv2.resize(frame, dsize=(
+                        IMAGE_SIZE, IMAGE_SIZE), interpolation=cv2.INTER_CUBIC))
+                    cv2.waitKey(1)
+                output = currentVal(frame)
+                if output != newVal:
+                    return False
+            return True
 
         prev = 0
         current = 0
         frames = 0
-        DELAY_FRAMES = 6
+        DELAY_FRAMES = 7
         video_link = None
         if USE_LIVESTREAM:
             video = streamlink.streams(LIVESTREAM_URL)
@@ -76,6 +67,10 @@ class AI():
         while (True):
             try:
                 ret, frame = vid.read()
+                if SHOW_VIDEO:
+                    cv2.imshow('frame', cv2.resize(frame, dsize=(
+                        IMAGE_SIZE, IMAGE_SIZE), interpolation=cv2.INTER_CUBIC))
+                    cv2.waitKey(1)
                 current = currentVal(frame)
                 if current != prev:
                     real = check_frames(current, vid)
@@ -85,9 +80,9 @@ class AI():
                             print('Occupancy Update: ' +
                                   str(occupancy) + ' People')
                         prev = current
-                cv2.waitKey(1)
 
-            except:
+            except Exception as e:
+                print(e)
                 return
 
     @staticmethod
